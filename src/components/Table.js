@@ -165,7 +165,7 @@ export default function EnhancedTable() {
                   <TableCell align="left">{product.title}</TableCell>
                   <TableCell align="left">{product.description}</TableCell>
                   <TableCell align="right">{product.price}</TableCell>
-                  <TableCell align="right">{product.image}</TableCell>
+                  <TableCell align="right">{product.product_image}</TableCell>
                 </TableRow>
               ))}
             {emptyRows > 0 && (
