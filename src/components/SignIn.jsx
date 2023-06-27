@@ -34,6 +34,8 @@ export default function SignIn(props) {
 
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [emailError, setEmailError] = useState(false);
+  const [passwordError, setPasswordError] = useState(false);
 
   const handleOpen = () => {
     setOpen(true);
@@ -48,6 +50,28 @@ export default function SignIn(props) {
     const data = new FormData(event.currentTarget);
     const email = data.get('email');
     const password = data.get('password');
+
+    console.log(!email);
+    if (!email) {
+      setEmailError(true);
+      return;
+    } else {
+      console.log("set false")
+      setEmailError(false);
+    }
+
+    if (!password) {
+      setPasswordError(true);
+      return;
+    } else {
+      setPasswordError(false);
+    }
+
+    if (!email || !password) {
+      setErrorMessage('Please fill in all required fields.');
+      handleOpen();
+      return;
+    }
 
     try{
       const response = await fetch('https://app.spiritx.co.nz/api/login', {
@@ -78,10 +102,10 @@ export default function SignIn(props) {
 
         setErrorMessage(errorMessage);
         handleOpen();
-        console.log(`errorMessage: ${errorMessage}`);
       }
     }catch (error) {
-
+      setErrorMessage('An error occured. Please try again.');
+      handleOpen();
     }
   };
 
@@ -113,6 +137,9 @@ export default function SignIn(props) {
               name="email"
               autoComplete="email"
               autoFocus
+              error={emailError}
+              helperText={emailError && 'Email required'}
+              onChange={() => setEmailError(false)}
             />
             <TextField
               margin="normal"
@@ -123,6 +150,9 @@ export default function SignIn(props) {
               type="password"
               id="password"
               autoComplete="current-password"
+              error={passwordError}
+              helperText={passwordError && 'Password required'}
+              onChange={() => setPasswordError(false)}
             />
             {/* <FormControlLabel
               control={<Checkbox value="remember" color="primary" />}
