@@ -4,10 +4,9 @@ import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
-import FormControlLabel from '@mui/material/FormControlLabel';
-import Checkbox from '@mui/material/Checkbox';
-import Link from '@mui/material/Link';
-import Grid from '@mui/material/Grid';
+import Dialog from '@mui/material/Dialog';
+import DialogTitle from '@mui/material/DialogTitle'
+import DialogContent from '@mui/material/DialogContent'
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
@@ -33,16 +32,23 @@ const defaultTheme = createTheme();
 
 export default function SignIn(props) {
 
-  const [signInSuccess, setSignInSuccess] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const handleOpen = () => {
+    setOpen(true);
+  }
+
+  const handleClose = () => {
+    setOpen(false);
+  }
 
   const handleSubmit = async (event) => {
-    console.log("Submit")
     event.preventDefault();
     const data = new FormData(event.currentTarget);
     const email = data.get('email');
     const password = data.get('password');
 
-    console.log(`email: ${email} password: ${password}`);
     try{
       const response = await fetch('https://app.spiritx.co.nz/api/login', {
         method: 'POST',
@@ -55,16 +61,10 @@ export default function SignIn(props) {
         }),
       });
 
-      console.log(response);
       if (response.ok){
-        console.log('if')
         const responseData = await response.json();
-        console.log(responseData.token.token);
         const token = responseData.token.token;
         const user = responseData.user;
-
-        console.log(`user: ${user}`);
-        console.log(`token: ${token}`)
 
         localStorage.setItem('react-demo-token', token);
         localStorage.setItem('react-demo-user', JSON.stringify(user));
@@ -73,7 +73,12 @@ export default function SignIn(props) {
           props.onSignInSuccess();
         }
       }else {
-        
+        const errorData = await response.json();
+        const errorMessage = errorData.error;
+
+        setErrorMessage(errorMessage);
+        handleOpen();
+        console.log(`errorMessage: ${errorMessage}`);
       }
     }catch (error) {
 
@@ -146,6 +151,12 @@ export default function SignIn(props) {
           </Box>
         </Box>
         {/* <Copyright sx={{ mt: 8, mb: 4 }} /> */}
+        <Dialog open={open} onClose={handleClose}>
+          <DialogTitle>Error</DialogTitle>
+          <DialogContent>
+            <Typography>{errorMessage}</Typography>
+          </DialogContent>
+        </Dialog>
       </Container>
     </ThemeProvider>
   );
