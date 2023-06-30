@@ -13,6 +13,14 @@ import TableSortLabel from '@mui/material/TableSortLabel';
 import Paper from '@mui/material/Paper';
 import { visuallyHidden } from '@mui/utils';
 import SearchAppBar from './SearchAppBar';
+import IconButton from '@mui/material/IconButton';
+import AddIcon from '@mui/icons-material/Add';
+import CheckIcon from '@mui/icons-material/Check';
+import ClearIcon from '@mui/icons-material/Clear';
+import EditIcon from '@mui/icons-material/Edit';
+import DeleteIcon from '@mui/icons-material/Delete';
+import { Icon } from '@mui/material';
+
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -87,6 +95,11 @@ function EnhancedTableHead(props) {
             </TableSortLabel>
           </TableCell>
         ))}
+        <TableCell align="center">
+          <IconButton onClick={props.onAddRow}>
+            <AddIcon />
+          </IconButton>
+        </TableCell>
       </TableRow>
     </TableHead>
   );
@@ -96,9 +109,11 @@ EnhancedTableHead.propTypes = {
   onRequestSort: PropTypes.func.isRequired,
   order: PropTypes.oneOf(['asc', 'desc']).isRequired,
   orderBy: PropTypes.string.isRequired,
+  rowCount: PropTypes.number.isRequired,
+  onAddRow: PropTypes.func.isRequired,
 };
 
-export default function EnhancedTable() {
+export default function EnhancedTable(props) {
   const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
   const [order, setOrder] = React.useState('asc');
@@ -106,6 +121,7 @@ export default function EnhancedTable() {
   const [selected, setSelected] = React.useState([]);
   const [page, setPage] = React.useState(0);
   const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [editingRowId, setEditingRowId] = useState(null);
 
   useEffect(() => {
     fetch('https://app.spiritx.co.nz/api/products')
@@ -117,7 +133,7 @@ export default function EnhancedTable() {
       })
       .then((data) => {
         setRows(data);
-        setFilteredRows(data); // Set initial filtered rows to all rows
+        setFilteredRows(data); 
       })
       .catch((error) => {
         console.log(`Error tata: ${error}`);
@@ -169,25 +185,80 @@ export default function EnhancedTable() {
     [filteredRows, order, orderBy, page, rowsPerPage]
   );
 
+  function generateUniqueId() {
+    // Generate a random alphanumeric string
+    const alphanumeric = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    let uniqueId = '';
+  
+    for (let i = 0; i < 8; i++) {
+      const randomIndex = Math.floor(Math.random() * alphanumeric.length);
+      uniqueId += alphanumeric.charAt(randomIndex);
+    }
+  
+    return uniqueId;
+  }
+  
+  const handleAddRow = () => {
+    const newRow = {
+      id: generateUniqueId(), 
+      title: '',
+      description: '',
+      price: 0,
+      product_image: '',
+    };
+    setRows((prevRows) => [newRow, ...prevRows]);
+    setFilteredRows((prevFilteredRows) => [newRow, ...prevFilteredRows]);
+    setSelected((prevSelected) => [newRow.id, ...prevSelected]);
+  };
+
   
 
-  const handleSearch = (searchQuery) => {
-    console.log('Inside handleSearch')
-    if (!rows || rows.length === 0) {
-      return;
-    }
-  
+  const handleSaveRow = async (row) => {
     try {
-      const filtered = rows.filter((row) =>
-        row.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredRows(filtered);
-    } catch (error) {
-      console.log(`Error tata: ${error}`);
+      const requestOptions = {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          token: 'your-token-value', // Replace with your actual token
+        },
+        body: new URLSearchParams({
+          title: row.title,
+          description: row.description,
+          price: row.price,
+          is_active: row.is_active,
+          category_id: row.category_id,
+          product_image: row.product_image,
+        }).toString(),
+      };
+  
+      fetch('https://app.spiritx.co.nz/api/products', requestOptions)
+        .then((response) => {
+          if (!response.ok) {
+            throw new Error(`An error occurred: ${response.status}`);
+          }
+          return response.json();
+        })
+        .then((data) => {
+          console.log('Row saved:', data);
+          // Perform any additional logic after saving the row
+        })
+    }catch (error) {
+      console.error('Error saving row:', error);
+      // Handle the error appropriately
+    }finally{
+      setEditingRowId(null);
     }
   };
-  
-  
+
+  const handleRemoveRow = () => {
+    // Perfom remove row logic here
+
+    setRows((prevRows) => prevRows.filter((row) => row.id !== row.Id));
+  };
+
+  const handleEditRow = (rowId) => {
+    setEditingRowId(rowId)
+  };
 
   return (
     <Box sx={{ maxWidth: '1200px', margin: '0 auto' }}>
@@ -200,34 +271,120 @@ export default function EnhancedTable() {
               order={order}
               orderBy={orderBy}
               onRequestSort={handleRequestSort}
+              onAddRow={handleAddRow}
             />
             <TableBody>
               {visibleRows.map((row, index) => {
+                const isItemSelected = selected.includes(row.id);
+                const labelId = `enhanced-table-checkbox-${index}`;
                 return (
                   <TableRow
                     hover
-                    onClick={(event) => handleClick(event, row.name)}
+                    onClick={(event) => handleClick(event, row.id)}
+                    role="checkbox"
+                    aria-checked={isItemSelected}
                     tabIndex={-1}
                     key={row.id}
+                    selected={isItemSelected}
                     sx={{ cursor: 'pointer' }}
                   >
-                    <TableCell component='th' scope='row' padding='normal' align='center'>
-                      {row.title}
-                    </TableCell>
-                    <TableCell align='center'>{row.description}</TableCell>
-                    <TableCell align='center'>{row.price}</TableCell>
-                    <TableCell align='center'>
-                      {row.product_image ? (
-                        <img
-                          src={`https://app.spiritx.co.nz/storage/${row.product_image}`}
-                          alt={row.title}
-                          width='130px'
-                        />
-                      ) : (
-                        'No image'
+                    <TableCell component='th' id={labelId} scope='row' padding='normal' align='center'>
+                      {editingRowId === row.id ? (
+                        <input
+                          type="text"
+                          value={row.title}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setRows((prevRows) => 
+                              prevRows.map((prevRow) => 
+                                prevRow.id === row.id ? {...prevRow, title: value } : prevRow));
+                          }} />
+                      ): (
+                        row.tile
                       )}
                     </TableCell>
-                    <TableCell align='center'></TableCell>
+                    <TableCell align='center'>
+                      {editingRowId === row.id ? (
+                        <input
+                          type="text"
+                          value={row.description}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setRows((prevRows) =>
+                              prevRows.map((prevRow) =>
+                                prevRow.id === row.id
+                                  ? {...prevRow, descripiton: value} : prevRow));
+                            setFilteredRows((prevFilteredRows) => 
+                              prevFilteredRows.map((prevRow) =>
+                                prevRow.id === row.id ? {...prevRow, description: value} : prevRow));
+                          }} />
+                      ) : (row.descripiton)
+                      }
+                    </TableCell>
+                    <TableCell align='center'>
+                      {editingRowId === row.id ? (
+                        <input
+                          type="number"
+                          value={row.price}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setRows((prevRows) =>
+                              prevRows.map((prevRow) => 
+                                prevRow.id === row.id ? {...prevRow, price: value } : prevRow));
+                            setFilteredRows((prevFilteredRows) => 
+                              prevFilteredRows.map((prevRow) =>
+                                prevRow.id === row.id ? { ...prevRow, price: value} : prevRow));
+                          }} />
+                      ) : (row.price)
+                      }
+                    </TableCell>
+                    <TableCell align='center'>
+                      {editingRowId === row.id ? (
+                        <input
+                          type="text"
+                          value={row.product_image}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setRows((prevRows) =>
+                              prevRows.map((prevRow) =>
+                                prevRow.id === row.id ? { ...prevRow, product_image: value } : prevRow
+                              )
+                            );
+                            setFilteredRows((prevFilteredRows) =>
+                              prevFilteredRows.map((prevRow) =>
+                                prevRow.id === row.id ? { ...prevRow, product_image: value } : prevRow
+                              )
+                            );
+                          }}
+                        />
+                      ) : (
+                        row.product_image
+                      )}
+                    </TableCell>
+                    <TableCell align="center">
+                      {editingRowId === row.id ? (
+                        <>
+                          <IconButton
+                            onClick={() => handleSaveRow(row.id)}
+                            disabled={!row.title || !row.description || !row.price || !row.product_image}
+                            >
+                              <CheckIcon />
+                            </IconButton>
+                            <IconButton onClick={() => setEditingRowId(null)}>
+                              <ClearIcon />
+                            </IconButton>
+                        </>
+                      ) : (
+                        <>
+                          <IconButton onClick={() => handleEditRow(row.id)}>
+                            <EditIcon />
+                          </IconButton>
+                          <IconButton onClick={() => handleRemoveRow(row.id)}>
+                            <DeleteIcon />
+                          </IconButton>
+                        </>
+                      )}
+                    </TableCell>
                   </TableRow>
                 );
               })}

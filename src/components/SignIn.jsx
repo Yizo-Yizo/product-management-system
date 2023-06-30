@@ -51,12 +51,10 @@ export default function SignIn(props) {
     const email = data.get('email');
     const password = data.get('password');
 
-    console.log(!email);
     if (!email) {
       setEmailError(true);
       return;
     } else {
-      console.log("set false")
       setEmailError(false);
     }
 
