@@ -209,6 +209,7 @@ export default function EnhancedTable(props) {
     setRows((prevRows) => [newRow, ...prevRows]);
     setFilteredRows((prevFilteredRows) => [newRow, ...prevFilteredRows]);
     setSelected((prevSelected) => [newRow.id, ...prevSelected]);
+    setEditingRowId(newRow.id);
   };
 
   
@@ -300,7 +301,7 @@ export default function EnhancedTable(props) {
                                 prevRow.id === row.id ? {...prevRow, title: value } : prevRow));
                           }} />
                       ): (
-                        row.tile
+                        row.title
                       )}
                     </TableCell>
                     <TableCell align='center'>
@@ -313,12 +314,12 @@ export default function EnhancedTable(props) {
                             setRows((prevRows) =>
                               prevRows.map((prevRow) =>
                                 prevRow.id === row.id
-                                  ? {...prevRow, descripiton: value} : prevRow));
+                                  ? {...prevRow, description: value} : prevRow));
                             setFilteredRows((prevFilteredRows) => 
                               prevFilteredRows.map((prevRow) =>
                                 prevRow.id === row.id ? {...prevRow, description: value} : prevRow));
                           }} />
-                      ) : (row.descripiton)
+                      ) : (row.description)
                       }
                     </TableCell>
                     <TableCell align='center'>
@@ -358,7 +359,15 @@ export default function EnhancedTable(props) {
                           }}
                         />
                       ) : (
-                        row.product_image
+                        row.product_image ? (
+                          <img
+                            src={`https://app.spiritx.co.nz/storage/${row.product_image}`}
+                            alt={row.title}
+                            width='130px'
+                          />
+                        ) : (
+                          'No image'
+                        )
                       )}
                     </TableCell>
                     <TableCell align="center">
