@@ -184,6 +184,21 @@ export default function EnhancedTable(props) {
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
     [filteredRows, order, orderBy, page, rowsPerPage]
   );
+  const handleSearch = (searchQuery) => {
+    console.log('Inside handleSearch')
+    if (!rows || rows.length === 0) {
+      return;
+    }
+  
+    try {
+      const filtered = rows.filter((row) =>
+        row.title.toLowerCase().includes(searchQuery.toLowerCase())
+      );
+      setFilteredRows(filtered);
+    } catch (error) {
+      console.log(`Error tata: ${error}`);
+    }
+  };
 
   function generateUniqueId() {
     // Generate a random alphanumeric string
@@ -216,20 +231,22 @@ export default function EnhancedTable(props) {
 
   const handleSaveRow = async (row) => {
     try {
+
+      const formData = new FormData();
+      formData.append('title', row.title);
+      formData.append('description', row.description);
+      formData.append('price', row.price);
+      formData.append('is_active', row.is_active);
+      formData.append('category_id', row.category_id);
+      formData.append('product_image', row.product_image);
+
       const requestOptions = {
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
           token: 'your-token-value', // Replace with your actual token
         },
-        body: new URLSearchParams({
-          title: row.title,
-          description: row.description,
-          price: row.price,
-          is_active: row.is_active,
-          category_id: row.category_id,
-          product_image: row.product_image,
-        }).toString(),
+        body: formData,
       };
   
       fetch('https://app.spiritx.co.nz/api/products', requestOptions)
@@ -254,7 +271,9 @@ export default function EnhancedTable(props) {
   const handleRemoveRow = () => {
     // Perfom remove row logic here
 
-    setRows((prevRows) => prevRows.filter((row) => row.id !== row.Id));
+    setRows((prevRows) => prevRows.filter((row) => !selected.includes(row.id)));
+    setFilteredRows((prevFilteredRows) => prevFilteredRows.filter((row) => !selected.includes(row.id)));
+    setSelected([]);
   };
 
   const handleEditRow = (rowId) => {
@@ -298,7 +317,11 @@ export default function EnhancedTable(props) {
                             const value = e.target.value;
                             setRows((prevRows) => 
                               prevRows.map((prevRow) => 
-                                prevRow.id === row.id ? {...prevRow, title: value } : prevRow));
+                                prevRow.id === row.id 
+                                  ? {...prevRow, title: value } : prevRow));
+                            setFilteredRows((prevFilteredRows) =>
+                              prevFilteredRows.map((prevRow) =>
+                                prevRow.id === row.id ? {...prevRow, title: value} : prevRow));
                           }} />
                       ): (
                         row.title
@@ -342,20 +365,18 @@ export default function EnhancedTable(props) {
                     <TableCell align='center'>
                       {editingRowId === row.id ? (
                         <input
-                          type="text"
+                          type="file"
                           value={row.product_image}
                           onChange={(e) => {
-                            const value = e.target.value;
-                            setRows((prevRows) =>
-                              prevRows.map((prevRow) =>
-                                prevRow.id === row.id ? { ...prevRow, product_image: value } : prevRow
-                              )
-                            );
-                            setFilteredRows((prevFilteredRows) =>
-                              prevFilteredRows.map((prevRow) =>
-                                prevRow.id === row.id ? { ...prevRow, product_image: value } : prevRow
-                              )
-                            );
+                            const file = e.target.files[0];
+                            if (file) {
+                              const reader = new FileReader();
+                              reader.onloadend = () => {
+                                setRows((prevRows) =>
+                                  prevRows.map((prevRow) => (prevRow.id === row.id ? { ...prevRow, product_image: reader.result } : prevRow)));
+                              };
+                              reader.readAsDataURL(file);
+                            }
                           }}
                         />
                       ) : (
