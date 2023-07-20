@@ -86,6 +86,8 @@ export default function SignIn(props) {
       if (response.ok){
         const responseData = await response.json();
         const token = responseData.token.token;
+        global.SharedToken = { token };
+
         const user = responseData.user;
 
         localStorage.setItem('react-demo-token', token);

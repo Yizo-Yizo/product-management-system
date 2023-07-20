@@ -19,8 +19,11 @@ import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { Icon } from '@mui/material';
+import { AddAPhoto } from '@mui/icons-material';
+import axios from 'axios';
 
+let isEdit;
+let rowID;
 
 function descendingComparator(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -35,7 +38,7 @@ function descendingComparator(a, b, orderBy) {
 function getComparator(order, orderBy) {
   return order === 'desc'
     ? (a, b) => descendingComparator(a, b, orderBy)
-    : (a, b) => -descendingComparator(a, b, orderBy);
+    : (a, b) => -descendingComparator(b, a, orderBy);
 }
 
 const headCells = [
@@ -59,7 +62,7 @@ const headCells = [
   },
   {
     id: 'image',
-    numeric: true,
+    numeric: false,
     disablePadding: false,
     label: 'Image',
   },
@@ -116,12 +119,13 @@ EnhancedTableHead.propTypes = {
 export default function EnhancedTable(props) {
   const [rows, setRows] = useState([]);
   const [filteredRows, setFilteredRows] = useState([]);
-  const [order, setOrder] = React.useState('asc');
-  const [orderBy, setOrderBy] = React.useState('calories');
-  const [selected, setSelected] = React.useState([]);
-  const [page, setPage] = React.useState(0);
-  const [rowsPerPage, setRowsPerPage] = React.useState(5);
+  const [order, setOrder] = useState('desc');
+  const [orderBy, setOrderBy] = useState('id');
+  const [selected, setSelected] = useState([]);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(5);
   const [editingRowId, setEditingRowId] = useState(null);
+  const [selectedImage, setSelectedImage] = useState({});
 
   useEffect(() => {
     fetch('https://app.spiritx.co.nz/api/products')
@@ -133,12 +137,26 @@ export default function EnhancedTable(props) {
       })
       .then((data) => {
         setRows(data);
-        setFilteredRows(data); 
+        setFilteredRows(data);
       })
       .catch((error) => {
         console.log(`Error tata: ${error}`);
       });
   }, []);
+
+  const handleImageChange = (event, rowId, row) => {
+    const file = event.target.files[0];
+    setSelectedImage((prevSelectedImage) => ({
+      ...prevSelectedImage,
+      [rowId]: URL.createObjectURL(file),
+    }));
+
+    const updatedRow = { ...row, product_image: file };
+    setRows((prevRows) => prevRows.map((prevRow) => (prevRow.id === rowId ? updatedRow : prevRow)));
+    setFilteredRows((prevFilteredRows) =>
+      prevFilteredRows.map((prevRow) => (prevRow.id === rowId ? updatedRow : prevRow))
+    );
+  };
 
   const handleRequestSort = (event, property) => {
     const isAsc = orderBy === property && order === 'asc';
@@ -146,12 +164,12 @@ export default function EnhancedTable(props) {
     setOrderBy(property);
   };
 
-  const handleClick = (event, name) => {
-    const selectedIndex = selected.indexOf(name);
+  const handleClick = (event, row) => {
+    const selectedIndex = selected.indexOf(row.id);
     let newSelected = [];
 
     if (selectedIndex === -1) {
-      newSelected = newSelected.concat(selected, name);
+      newSelected = newSelected.concat(selected, row.id);
     } else if (selectedIndex === 0) {
       newSelected = newSelected.concat(selected.slice(1));
     } else if (selectedIndex === selected.length - 1) {
@@ -184,12 +202,13 @@ export default function EnhancedTable(props) {
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
     [filteredRows, order, orderBy, page, rowsPerPage]
   );
+
   const handleSearch = (searchQuery) => {
     console.log('Inside handleSearch')
     if (!rows || rows.length === 0) {
       return;
     }
-  
+
     try {
       const filtered = rows.filter((row) =>
         row.title.toLowerCase().includes(searchQuery.toLowerCase())
@@ -204,80 +223,180 @@ export default function EnhancedTable(props) {
     // Generate a random alphanumeric string
     const alphanumeric = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
     let uniqueId = '';
-  
+
     for (let i = 0; i < 8; i++) {
       const randomIndex = Math.floor(Math.random() * alphanumeric.length);
       uniqueId += alphanumeric.charAt(randomIndex);
     }
-  
+
     return uniqueId;
   }
-  
+
   const handleAddRow = () => {
     const newRow = {
-      id: generateUniqueId(), 
+      id: generateUniqueId(),
       title: '',
       description: '',
       price: 0,
       product_image: '',
     };
-    setRows((prevRows) => [newRow, ...prevRows]);
-    setFilteredRows((prevFilteredRows) => [newRow, ...prevFilteredRows]);
-    setSelected((prevSelected) => [newRow.id, ...prevSelected]);
+    setRows([newRow, ...rows]);
+    setFilteredRows([newRow, ...filteredRows]);
+    setSelected([newRow.id, ...selected]);
     setEditingRowId(newRow.id);
+    setSelectedImage((prevSelectedImage) => ({
+      ...prevSelectedImage,
+      [newRow.id]: null,
+    }));
   };
 
-  
+  // const handleSaveRow = async (row) => {
+  //   try {
 
-  const handleSaveRow = async (row) => {
-    try {
+  //     const category = 99;
+  //     const isActive = 1;
+  //     const token = global.SharedToken.token;
+
+  //     console.log(`token ${token}`)
+
+  //     // if (!row.product_image || !(row.product_image instanceof File)) {
+  //     //   throw new Error('Invalid product image. Please select an image file.');
+  //     // }
+
+  //     const formData = new FormData();
+  //     formData.append('title', row.title);
+  //     formData.append('description', row.description);
+  //     formData.append('price', row.price.toString());
+  //     formData.append('is_active', isActive);
+  //     formData.append('product_image', row.product_image);
+  //     formData.append('category_id', category.toString());
+
+  //     for (const pair of formData.entries()) {
+  //       const [key, value] = pair;
+  //       console.log(key, value, typeof value);
+  //     }
+
+  //     const requestOptions = {
+  //       headers: {
+  //         'Content-Type': 'multipart/form-data',
+  //         token: token,
+  //       }
+  //     };
+
+  //     const response = await axios.post('https://app.spiritx.co.nz/api/products', formData, requestOptions);
+  //     console.log('Row saved:', response.data);
+  //   } catch (error) {
+  //     console.error('Error saving row:', error);
+  //     // Handle the error appropriately
+  //   } finally {
+  //     setEditingRowId(null);
+  //   }
+  // };
+
+
+  const handleSaveRow = (row) => {
+
+    if (isEdit === true) {
+      console.log('Edit before');
+      const token = global.SharedToken.token;
+
+      const formData = new FormData();
+      formData.append('_method', 'PUT');
+
+      const requestOptions = {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          token: token,
+        },
+      };
+
+      axios
+        .post(`https://app.spiritx.co.nz/api/product/${rowID}`, formData, requestOptions)
+        .then((response) => {
+          console.log('Edit after');
+          console.log('Row edited:', response.data);
+
+          setEditingRowId(null);
+
+          // window.location.reload();
+        })
+        .catch((error) => {
+          console.error('Error saving row:', error);
+          setEditingRowId(null);
+        });
+    } else {
+      const category = 99;
+      const isActive = 1;
+      const token = global.SharedToken.token;
 
       const formData = new FormData();
       formData.append('title', row.title);
       formData.append('description', row.description);
-      formData.append('price', row.price);
-      formData.append('is_active', row.is_active);
-      formData.append('category_id', row.category_id);
+      formData.append('price', row.price.toString());
+      formData.append('is_active', isActive);
+      formData.append('category_id', category.toString());
       formData.append('product_image', row.product_image);
 
       const requestOptions = {
-        method: 'POST',
         headers: {
-          'Content-Type': 'application/x-www-form-urlencoded',
-          token: 'your-token-value', // Replace with your actual token
+          'Content-Type': 'multipart/form-data',
+          token: token,
         },
-        body: formData,
       };
-  
-      fetch('https://app.spiritx.co.nz/api/products', requestOptions)
+
+      axios
+        .post('https://app.spiritx.co.nz/api/products', formData, requestOptions)
         .then((response) => {
-          if (!response.ok) {
-            throw new Error(`An error occurred: ${response.status}`);
-          }
-          return response.json();
+
+          console.log('Row saved:', response.data);
+
+          setEditingRowId(null);
+
+          window.location.reload();
         })
-        .then((data) => {
-          console.log('Row saved:', data);
-          // Perform any additional logic after saving the row
-        })
-    }catch (error) {
-      console.error('Error saving row:', error);
-      // Handle the error appropriately
-    }finally{
-      setEditingRowId(null);
+        .catch((error) => {
+          console.error('Error saving row:', error);
+          setEditingRowId(null);
+        });
     }
+
   };
 
-  const handleRemoveRow = () => {
-    // Perfom remove row logic here
+  const handleRemoveRow = (rowId) => {
 
-    setRows((prevRows) => prevRows.filter((row) => !selected.includes(row.id)));
-    setFilteredRows((prevFilteredRows) => prevFilteredRows.filter((row) => !selected.includes(row.id)));
-    setSelected([]);
+    const token = global.SharedToken.token;
+
+    const requestOptions = {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+        token: token,
+      },
+    };
+
+    axios
+      .delete(`https://app.spiritx.co.nz/api/product/${rowId}`, requestOptions)
+      .then((response) => {
+
+        console.log(response)
+
+        setRows((prevRows) => prevRows.filter((row) => row.id !== rowId));
+
+        setFilteredRows((prevFilteredRows) =>
+          prevFilteredRows.filter((row) => row.id !== rowId)
+        );
+      })
+      .catch((error) => {
+        console.log('Error deleting a row:', error);
+      })
   };
 
   const handleEditRow = (rowId) => {
+
     setEditingRowId(rowId)
+
+    isEdit = true;
+    rowID = rowId
+
   };
 
   return (
@@ -315,15 +434,15 @@ export default function EnhancedTable(props) {
                           value={row.title}
                           onChange={(e) => {
                             const value = e.target.value;
-                            setRows((prevRows) => 
-                              prevRows.map((prevRow) => 
-                                prevRow.id === row.id 
-                                  ? {...prevRow, title: value } : prevRow));
+                            setRows((prevRows) =>
+                              prevRows.map((prevRow) =>
+                                prevRow.id === row.id
+                                  ? { ...prevRow, title: value } : prevRow));
                             setFilteredRows((prevFilteredRows) =>
                               prevFilteredRows.map((prevRow) =>
-                                prevRow.id === row.id ? {...prevRow, title: value} : prevRow));
+                                prevRow.id === row.id ? { ...prevRow, title: value } : prevRow));
                           }} />
-                      ): (
+                      ) : (
                         row.title
                       )}
                     </TableCell>
@@ -337,10 +456,10 @@ export default function EnhancedTable(props) {
                             setRows((prevRows) =>
                               prevRows.map((prevRow) =>
                                 prevRow.id === row.id
-                                  ? {...prevRow, description: value} : prevRow));
-                            setFilteredRows((prevFilteredRows) => 
+                                  ? { ...prevRow, description: value } : prevRow));
+                            setFilteredRows((prevFilteredRows) =>
                               prevFilteredRows.map((prevRow) =>
-                                prevRow.id === row.id ? {...prevRow, description: value} : prevRow));
+                                prevRow.id === row.id ? { ...prevRow, description: value } : prevRow));
                           }} />
                       ) : (row.description)
                       }
@@ -353,56 +472,66 @@ export default function EnhancedTable(props) {
                           onChange={(e) => {
                             const value = e.target.value;
                             setRows((prevRows) =>
-                              prevRows.map((prevRow) => 
-                                prevRow.id === row.id ? {...prevRow, price: value } : prevRow));
-                            setFilteredRows((prevFilteredRows) => 
+                              prevRows.map((prevRow) =>
+                                prevRow.id === row.id ? { ...prevRow, price: value } : prevRow));
+                            setFilteredRows((prevFilteredRows) =>
                               prevFilteredRows.map((prevRow) =>
-                                prevRow.id === row.id ? { ...prevRow, price: value} : prevRow));
+                                prevRow.id === row.id ? { ...prevRow, price: value } : prevRow));
                           }} />
                       ) : (row.price)
                       }
                     </TableCell>
-                    <TableCell align='center'>
+                    <TableCell align="center">
                       {editingRowId === row.id ? (
-                        <input
-                          type="file"
-                          value={row.product_image}
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (file) {
-                              const reader = new FileReader();
-                              reader.onloadend = () => {
-                                setRows((prevRows) =>
-                                  prevRows.map((prevRow) => (prevRow.id === row.id ? { ...prevRow, product_image: reader.result } : prevRow)));
-                              };
-                              reader.readAsDataURL(file);
-                            }
-                          }}
-                        />
-                      ) : (
-                        row.product_image ? (
-                          <img
-                            src={`https://app.spiritx.co.nz/storage/${row.product_image}`}
-                            alt={row.title}
-                            width='130px'
+                        <>
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => handleImageChange(e, row.id, row)}
+                            style={{ display: 'none' }}
+                            id={`image-input-${row.id}`}
                           />
-                        ) : (
-                          'No image'
-                        )
+                          <label htmlFor={`image-input-${row.id}`}>
+                            {selectedImage[row.id] ? (
+                              <img
+                                src={selectedImage[row.id]}
+                                alt={row.title}
+                                style={{ width: '130px' }}
+                              />
+                            ) : (
+                              <>
+                                <AddAPhoto style={{ marginRight: '8px' }} />
+                                Choose Image
+                              </>
+                            )}
+                          </label>
+                        </>
+                      ) : (
+                        <>
+                          {row.product_image ? (
+                            <img
+                              src={`https://app.spiritx.co.nz/storage/${row.product_image}`}
+                              alt={row.title}
+                              style={{ width: '130px' }}
+                            />
+                          ) : (
+                            'No image'
+                          )}
+                        </>
                       )}
                     </TableCell>
+
                     <TableCell align="center">
                       {editingRowId === row.id ? (
                         <>
                           <IconButton
-                            onClick={() => handleSaveRow(row.id)}
-                            disabled={!row.title || !row.description || !row.price || !row.product_image}
-                            >
-                              <CheckIcon />
-                            </IconButton>
-                            <IconButton onClick={() => setEditingRowId(null)}>
-                              <ClearIcon />
-                            </IconButton>
+                            onClick={() => handleSaveRow(row)}
+                          >
+                            <CheckIcon />
+                          </IconButton>
+                          <IconButton onClick={() => setEditingRowId(null)}>
+                            <ClearIcon />
+                          </IconButton>
                         </>
                       ) : (
                         <>
