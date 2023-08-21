@@ -19,7 +19,8 @@ import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { AddAPhoto } from '@mui/icons-material';
+import { AccountCircle, AddAPhoto } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 let isEdit;
@@ -126,6 +127,7 @@ export default function EnhancedTable(props) {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [editingRowId, setEditingRowId] = useState(null);
   const [selectedImage, setSelectedImage] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch('https://app.spiritx.co.nz/api/products')
@@ -202,22 +204,6 @@ export default function EnhancedTable(props) {
         .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage),
     [filteredRows, order, orderBy, page, rowsPerPage]
   );
-
-  const handleSearch = (searchQuery) => {
-    console.log('Inside handleSearch')
-    if (!rows || rows.length === 0) {
-      return;
-    }
-
-    try {
-      const filtered = rows.filter((row) =>
-        row.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredRows(filtered);
-    } catch (error) {
-      console.log(`Error tata: ${error}`);
-    }
-  };
 
   function generateUniqueId() {
     // Generate a random alphanumeric string
@@ -297,8 +283,7 @@ export default function EnhancedTable(props) {
   const handleSaveRow = (row) => {
 
     if (isEdit === true) {
-      console.log('Edit before');
-      const token = global.SharedToken.token;
+      const token = localStorage.getItem('react-demo-token');
 
       const formData = new FormData();
       formData.append('_method', 'PUT');
@@ -352,7 +337,10 @@ export default function EnhancedTable(props) {
 
           setEditingRowId(null);
 
-          window.location.reload();
+          if (token) {
+            props.onSignInSuccess();
+            navigate('/table');
+          }
         })
         .catch((error) => {
           console.error('Error saving row:', error);
