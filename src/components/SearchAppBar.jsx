@@ -7,9 +7,11 @@ import Toolbar from '@mui/material/Toolbar';
 import IconButton from '@mui/material/IconButton';
 import Typography from '@mui/material/Typography';
 import InputBase from '@mui/material/InputBase';
-import MenuIcon from '@mui/icons-material/Menu';
 import AccountCircleIcon from '@mui/icons-material/AccountCircle';
 import SearchIcon from '@mui/icons-material/Search';
+import Menu from '@mui/material/Menu';
+import MenuItem from '@mui/material/MenuItem';
+import { useNavigate } from 'react-router-dom';
 
 const Search = styled('div')(({ theme }) => ({
   position: 'relative',
@@ -55,6 +57,9 @@ const StyledInputBase = styled(InputBase)(({ theme }) => ({
 
 export default function SearchAppBar({ rows, setFilteredRows }) {
   const [searchKeyword, setSearchKeyword] = useState('');
+  const [anchorEl, setAnchorEl] = useState(null);
+
+  const navigate = useNavigate();
 
   const handleSearch = (event) => {
     const keyword = event.target.value;
@@ -68,6 +73,19 @@ export default function SearchAppBar({ rows, setFilteredRows }) {
     setFilteredRows(filteredRows);
   };
 
+  const handleMenuOpen = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+
+  const HandleMenuClose = () => {
+    setAnchorEl(null);
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('react-demo-token');
+    navigate('/signin');
+  };
+
   return (
     <Box sx={{ flexGrow: 1 }}>
       <AppBar position="static">
@@ -78,9 +96,17 @@ export default function SearchAppBar({ rows, setFilteredRows }) {
             color="inherit"
             aria-label="open drawer"
             sx={{ mr: 2 }}
+            onClick={handleMenuOpen}
           >
             <AccountCircleIcon />
           </IconButton>
+          <Menu
+        anchorEl={anchorEl}
+        open={Boolean(anchorEl)}
+        onClose={HandleMenuClose}
+        >
+        <MenuItem onClick={handleLogout}>Logout</MenuItem>
+      </Menu>
           <Typography
             variant="h6"
             noWrap

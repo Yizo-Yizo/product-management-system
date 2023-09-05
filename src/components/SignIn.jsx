@@ -1,49 +1,34 @@
-import * as React from 'react';
-import { useState } from 'react';
+import React, { useState } from 'react';
 import Avatar from '@mui/material/Avatar';
 import Button from '@mui/material/Button';
 import CssBaseline from '@mui/material/CssBaseline';
 import TextField from '@mui/material/TextField';
 import Dialog from '@mui/material/Dialog';
-import DialogTitle from '@mui/material/DialogTitle'
-import DialogContent from '@mui/material/DialogContent'
+import DialogTitle from '@mui/material/DialogTitle';
+import DialogContent from '@mui/material/DialogContent';
 import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
-
-// function Copyright(props) {
-//   return (
-//     <Typography variant="body2" color="text.secondary" align="center" {...props}>
-//       {'Copyright © '}
-//       <Link color="inherit" href="https://mui.com/">
-//         Your Website
-//       </Link>{' '}
-//       {new Date().getFullYear()}
-//       {'.'}
-//     </Typography>
-//   );
-// }
-
-// TODO remove, this demo shouldn't need to reset the theme.
+import { useNavigate } from 'react-router-dom'; // Import useNavigate from react-router-dom
 
 const defaultTheme = createTheme();
 
-export default function SignIn(props) {
-
+function SignIn(props) {
   const [open, setOpen] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const navigate = useNavigate(); // Use navigate from React Router
 
   const handleOpen = () => {
     setOpen(true);
-  }
+  };
 
   const handleClose = () => {
     setOpen(false);
-  }
+  };
 
   const handleSubmit = async (event) => {
     event.preventDefault();
@@ -71,7 +56,7 @@ export default function SignIn(props) {
       return;
     }
 
-    try{
+    try {
       const response = await fetch('https://app.spiritx.co.nz/api/login', {
         method: 'POST',
         headers: {
@@ -83,7 +68,7 @@ export default function SignIn(props) {
         }),
       });
 
-      if (response.ok){
+      if (response.ok) {
         const responseData = await response.json();
         const token = responseData.token.token;
         global.SharedToken = { token };
@@ -95,16 +80,17 @@ export default function SignIn(props) {
 
         if (token) {
           props.onSignInSuccess();
+          navigate('/table'); // Use navigate to navigate to the '/table' route
         }
-      }else {
+      } else {
         const errorData = await response.json();
         const errorMessage = errorData.error;
 
         setErrorMessage(errorMessage);
         handleOpen();
       }
-    }catch (error) {
-      setErrorMessage('An error occured. Please try again.');
+    } catch (error) {
+      setErrorMessage('An error occurred. Please try again.');
       handleOpen();
     }
   };
@@ -154,10 +140,6 @@ export default function SignIn(props) {
               helperText={passwordError && 'Password required'}
               onChange={() => setPasswordError(false)}
             />
-            {/* <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            /> */}
             <Button
               type="submit"
               fullWidth
@@ -166,21 +148,8 @@ export default function SignIn(props) {
             >
               Sign In
             </Button>
-            {/* <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" variant="body2">
-                  {"Don't have an account? Sign Up"}
-                </Link>
-              </Grid>
-            </Grid> */}
           </Box>
         </Box>
-        {/* <Copyright sx={{ mt: 8, mb: 4 }} /> */}
         <Dialog open={open} onClose={handleClose}>
           <DialogTitle>Error</DialogTitle>
           <DialogContent>
@@ -191,3 +160,5 @@ export default function SignIn(props) {
     </ThemeProvider>
   );
 }
+
+export default SignIn;

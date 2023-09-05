@@ -19,7 +19,8 @@ import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
 import EditIcon from '@mui/icons-material/Edit';
 import DeleteIcon from '@mui/icons-material/Delete';
-import { AddAPhoto } from '@mui/icons-material';
+import { AccountCircle, AddAPhoto } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 
 let isEdit;
@@ -126,6 +127,7 @@ export default function EnhancedTable(props) {
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [editingRowId, setEditingRowId] = useState(null);
   const [selectedImage, setSelectedImage] = useState({});
+  const navigate = useNavigate();
 
   useEffect(() => {
     fetch('https://app.spiritx.co.nz/api/products')
@@ -203,22 +205,6 @@ export default function EnhancedTable(props) {
     [filteredRows, order, orderBy, page, rowsPerPage]
   );
 
-  const handleSearch = (searchQuery) => {
-    console.log('Inside handleSearch')
-    if (!rows || rows.length === 0) {
-      return;
-    }
-
-    try {
-      const filtered = rows.filter((row) =>
-        row.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      setFilteredRows(filtered);
-    } catch (error) {
-      console.log(`Error tata: ${error}`);
-    }
-  };
-
   function generateUniqueId() {
     // Generate a random alphanumeric string
     const alphanumeric = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
@@ -250,55 +236,10 @@ export default function EnhancedTable(props) {
     }));
   };
 
-  // const handleSaveRow = async (row) => {
-  //   try {
-
-  //     const category = 99;
-  //     const isActive = 1;
-  //     const token = global.SharedToken.token;
-
-  //     console.log(`token ${token}`)
-
-  //     // if (!row.product_image || !(row.product_image instanceof File)) {
-  //     //   throw new Error('Invalid product image. Please select an image file.');
-  //     // }
-
-  //     const formData = new FormData();
-  //     formData.append('title', row.title);
-  //     formData.append('description', row.description);
-  //     formData.append('price', row.price.toString());
-  //     formData.append('is_active', isActive);
-  //     formData.append('product_image', row.product_image);
-  //     formData.append('category_id', category.toString());
-
-  //     for (const pair of formData.entries()) {
-  //       const [key, value] = pair;
-  //       console.log(key, value, typeof value);
-  //     }
-
-  //     const requestOptions = {
-  //       headers: {
-  //         'Content-Type': 'multipart/form-data',
-  //         token: token,
-  //       }
-  //     };
-
-  //     const response = await axios.post('https://app.spiritx.co.nz/api/products', formData, requestOptions);
-  //     console.log('Row saved:', response.data);
-  //   } catch (error) {
-  //     console.error('Error saving row:', error);
-  //     // Handle the error appropriately
-  //   } finally {
-  //     setEditingRowId(null);
-  //   }
-  // };
-
-
   const handleSaveRow = (row) => {
 
     if (isEdit === true) {
-      console.log('Edit before');
-      const token = global.SharedToken.token;
+      const token = localStorage.getItem('react-demo-token');
 
       const formData = new FormData();
       formData.append('_method', 'PUT');
@@ -318,7 +259,7 @@ export default function EnhancedTable(props) {
 
           setEditingRowId(null);
 
-          // window.location.reload();
+          window.location.reload();
         })
         .catch((error) => {
           console.error('Error saving row:', error);
@@ -327,7 +268,7 @@ export default function EnhancedTable(props) {
     } else {
       const category = 99;
       const isActive = 1;
-      const token = global.SharedToken.token;
+      const token = localStorage.getItem('react-demo-token');
 
       const formData = new FormData();
       formData.append('title', row.title);
@@ -351,8 +292,11 @@ export default function EnhancedTable(props) {
           console.log('Row saved:', response.data);
 
           setEditingRowId(null);
-
           window.location.reload();
+          if (token) {
+            props.onSignInSuccess();
+            navigate('/table');
+          }
         })
         .catch((error) => {
           console.error('Error saving row:', error);
@@ -364,7 +308,7 @@ export default function EnhancedTable(props) {
 
   const handleRemoveRow = (rowId) => {
 
-    const token = global.SharedToken.token;
+    const token = localStorage.getItem('react-demo-token');
 
     const requestOptions = {
       headers: {
