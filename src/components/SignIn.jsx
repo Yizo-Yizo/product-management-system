@@ -11,22 +11,8 @@ import Box from '@mui/material/Box';
 import LockOutlinedIcon from '@mui/icons-material/LockOutlined';
 import Typography from '@mui/material/Typography';
 import Container from '@mui/material/Container';
-import { createTheme, ThemeProvider } from '@mui/material/styles';
-
-// function Copyright(props) {
-//   return (
-//     <Typography variant="body2" color="text.secondary" align="center" {...props}>
-//       {'Copyright © '}
-//       <Link color="inherit" href="https://mui.com/">
-//         Your Website
-//       </Link>{' '}
-//       {new Date().getFullYear()}
-//       {'.'}
-//     </Typography>
-//   );
-// }
-
-// TODO remove, this demo shouldn't need to reset the theme.
+import { createTheme, ThemeProvider } from '@mui/material/styles'
+import { useNavigate } from 'react-router-dom';
 
 const defaultTheme = createTheme();
 
@@ -36,6 +22,7 @@ export default function SignIn(props) {
   const [errorMessage, setErrorMessage] = useState('');
   const [emailError, setEmailError] = useState(false);
   const [passwordError, setPasswordError] = useState(false);
+  const navigate = useNavigate();
 
   const handleOpen = () => {
     setOpen(true);
@@ -51,6 +38,8 @@ export default function SignIn(props) {
     const email = data.get('email');
     const password = data.get('password');
 
+    console.log("Email: " + email)
+    console.log("Password: " + password)
     if (!email) {
       setEmailError(true);
       return;
@@ -83,18 +72,27 @@ export default function SignIn(props) {
         }),
       });
 
+      console.log('response')
+      console.log(response)
+      console.log(response.ok)
       if (response.ok){
         const responseData = await response.json();
+        console.log('responseData')
+        console.log(responseData)
         const token = responseData.token.token;
-        global.SharedToken = { token };
-
+        localStorage.setItem('react-demo-token', token);
+        //global.SharedToken = { token };
+        console.log('token: ' + token)
         const user = responseData.user;
-
+        console.log('user')
+        console.log(user)
         localStorage.setItem('react-demo-token', token);
         localStorage.setItem('react-demo-user', JSON.stringify(user));
 
         if (token) {
+          console.log('if (token)')
           props.onSignInSuccess();
+          navigate('/table');
         }
       }else {
         const errorData = await response.json();
@@ -154,10 +152,6 @@ export default function SignIn(props) {
               helperText={passwordError && 'Password required'}
               onChange={() => setPasswordError(false)}
             />
-            {/* <FormControlLabel
-              control={<Checkbox value="remember" color="primary" />}
-              label="Remember me"
-            /> */}
             <Button
               type="submit"
               fullWidth
@@ -166,18 +160,6 @@ export default function SignIn(props) {
             >
               Sign In
             </Button>
-            {/* <Grid container>
-              <Grid item xs>
-                <Link href="#" variant="body2">
-                  Forgot password?
-                </Link>
-              </Grid>
-              <Grid item>
-                <Link href="#" variant="body2">
-                  {"Don't have an account? Sign Up"}
-                </Link>
-              </Grid>
-            </Grid> */}
           </Box>
         </Box>
         {/* <Copyright sx={{ mt: 8, mb: 4 }} /> */}
