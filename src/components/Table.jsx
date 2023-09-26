@@ -22,6 +22,7 @@ import DeleteIcon from '@mui/icons-material/Delete';
 import { AccountCircle, AddAPhoto } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { apiDelete, apiGet, apiPost, apiPut } from '../service';
 
 let isEdit;
 let rowID;
@@ -130,20 +131,17 @@ export default function EnhancedTable(props) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    fetch('https://app.spiritx.co.nz/api/products')
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`An error occured: ${response.status}`);
-        }
-        return response.json()
-      })
-      .then((data) => {
-        setRows(data);
-        setFilteredRows(data);
-      })
-      .catch((error) => {
-        console.log(`Error tata: ${error}`);
-      });
+    const fetchData = async () => {
+      try {
+        const response = await apiGet('products');
+        setRows(response.data);
+        setFilteredRows(response.data)
+      } catch (error) {
+        console.log('Error fetching data: ', error);
+      }
+    };
+
+    fetchData();
   }, []);
 
   const handleImageChange = (event, rowId, row) => {
@@ -238,28 +236,32 @@ export default function EnhancedTable(props) {
 
   const handleSaveRow = (row) => {
 
+    console.log(row);
+    const token = localStorage.getItem('react-demo-token');
     if (isEdit === true) {
-      const token = localStorage.getItem('react-demo-token');
+      
+      const category = 99;
+      const isActive = 1;
 
       const formData = new FormData();
       formData.append('_method', 'PUT');
+      formData.append('title', row.title);
+      formData.append('description', row.description);
+      formData.append('price', row.price.toString());
+      formData.append('is_active', isActive);
+      formData.append('category_id', category.toString());
+      formData.append('product_image', row.product_image);
 
-      const requestOptions = {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          token: token,
-        },
-      };
+      // };
 
-      axios
-        .post(`https://app.spiritx.co.nz/api/product/${rowID}`, formData, requestOptions)
+      formData.forEach(data => console.log(data))
+      apiPost(`product/${row.id}`, formData)
         .then((response) => {
-          console.log('Edit after');
-          console.log('Row edited:', response.data);
-
+          console.log('Response')
+          console.log(response)
           setEditingRowId(null);
 
-          window.location.reload();
+          //window.location.reload();
         })
         .catch((error) => {
           console.error('Error saving row:', error);
@@ -268,7 +270,7 @@ export default function EnhancedTable(props) {
     } else {
       const category = 99;
       const isActive = 1;
-      const token = localStorage.getItem('react-demo-token');
+      //const token = localStorage.getItem('react-demo-token');
 
       const formData = new FormData();
       formData.append('title', row.title);
@@ -278,19 +280,16 @@ export default function EnhancedTable(props) {
       formData.append('category_id', category.toString());
       formData.append('product_image', row.product_image);
 
-      const requestOptions = {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          token: token,
-        },
-      };
+      // const requestOptions = {
+      //   headers: {
+      //     token: token,
+      //   },
+      // };
 
-      axios
-        .post('https://app.spiritx.co.nz/api/products', formData, requestOptions)
+      apiPost('products', formData)
         .then((response) => {
-
-          console.log('Row saved:', response.data);
-
+          console.log('Response')
+          console.log(response)
           setEditingRowId(null);
           window.location.reload();
           if (token) {
@@ -299,7 +298,6 @@ export default function EnhancedTable(props) {
           }
         })
         .catch((error) => {
-          console.error('Error saving row:', error);
           setEditingRowId(null);
         });
     }
@@ -312,16 +310,12 @@ export default function EnhancedTable(props) {
 
     const requestOptions = {
       headers: {
-        'Content-Type': 'multipart/form-data',
         token: token,
       },
     };
 
-    axios
-      .delete(`https://app.spiritx.co.nz/api/product/${rowId}`, requestOptions)
+    apiDelete(`product/${rowId}`)
       .then((response) => {
-
-        console.log(response)
 
         setRows((prevRows) => prevRows.filter((row) => row.id !== rowId));
 
