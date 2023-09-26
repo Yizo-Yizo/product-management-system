@@ -15,13 +15,6 @@ function App() {
     }
   }, []);
 
-  // function handleSigInSuccess() {
-  //   console.log('handleSigInSuccess')
-  //   setSignInSuccess(true);
-  //   const navigate = useNavigate();
-  //   navigate('/table');
-  //   };
-
   return (
     <Router>
       <div>
